@@ -78,7 +78,7 @@ class Handler extends ExceptionHandler
                 }
             }
             $data['errors'] = $allErrors;
-            return $this->responseError($data, 422);
+            return $this->responseError($data, 400);
         }
         /*
          * Handle database errors thrown using QueryException.

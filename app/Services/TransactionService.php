@@ -12,17 +12,6 @@ use App\Jobs\Notification;
 
 final class TransactionService
 {
-    /**
-    * Variavel com os dados do beneficiário
-    * @var Person 
-    */
-    protected $payee;
-    
-    /**
-    * Variavel com os dados do pagador
-    * @var Person 
-    */
-    protected $payer;
 
     /**
     * Repositorio de pessoas
@@ -61,13 +50,15 @@ final class TransactionService
             'value' => 'required|numeric|min:0',
         ]);
 
-        $this->payer = $this->getPerson((int) $request->payer, ['PF']);
-        $this->payee = $this->getPerson((int) $request->payee);
+        $payer = $this->getPerson((int) $request->payer, ['PF']);
+        $payee = $this->getPerson((int) $request->payee);
 
         $statusTransferred = $this->checkStatusTransferred();
         $money = (float) $request->value;
         
         $statusTransaction = $this->saveTransaction(
+            $payer,
+            $payee,
             $money,
             $statusTransferred,
         );
@@ -152,12 +143,12 @@ final class TransactionService
      * @param array $response
      * @return string
      */
-    protected function saveTransaction(float $money, string $status) : bool
+    protected function saveTransaction(Person $payee, Person $payer, float $money, string $status) : bool
     {
         try {
             $this->transactionRepository->insert([
-                'payee' => $this->payee->id,
-                'payer' => $this->payer->id,
+                'payee' => $payee->id,
+                'payer' => $payer->id,
                 'value' => $money,
                 'status' => $status
             ]);

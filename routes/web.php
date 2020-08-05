@@ -13,5 +13,4 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Route::get('/transaction', 'TransactionController@index');
 Route::post('/transaction', 'TransactionController@index');

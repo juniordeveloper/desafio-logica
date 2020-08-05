@@ -20,7 +20,7 @@ class TransactionTest extends TestCase
                 'payee' => 1
             ]
         );
-        
+
         $response
             ->assertStatus(200);
     }
@@ -57,5 +57,22 @@ class TransactionTest extends TestCase
 
         $response
             ->assertStatus(400);
+    }
+    
+    /** @test */
+    public function check_if_transaction_values_is_not_expected()
+    {
+        $response = $this->json(
+            'POST',
+            '/transaction',
+            [
+                'value' => "100.00",
+                'payer'=> "3",
+                'payee' => "1"
+            ]
+        );
+
+        $response
+            ->assertStatus(500);
     }
 }

@@ -44,17 +44,11 @@ final class TransactionService
      */
     public function handle(Request $request) : bool
     {
-        $request->validate([
-            'payer' => 'required|numeric',
-            'payee' => 'required|numeric',
-            'value' => 'required|numeric|min:0',
-        ]);
-
-        $payer = $this->getPerson((int) $request->payer, ['PF']);
-        $payee = $this->getPerson((int) $request->payee);
+        $payer = $this->getPerson($request->payer, ['PF']);
+        $payee = $this->getPerson($request->payee);
 
         $statusTransferred = $this->checkStatusTransferred();
-        $money = (float) $request->value;
+        $money = $request->value;
         
         $statusTransaction = $this->saveTransaction(
             $payer,

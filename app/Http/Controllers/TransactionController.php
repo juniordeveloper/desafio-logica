@@ -14,7 +14,7 @@ class TransactionController extends Controller
 
     public function index(Request $request)
     {
-        $transaction = $this->transactionService->handle($request);
+        $this->transactionService->handle($request);
         $data = [
             'message' => 'Transação realizada com sucesso'
         ];

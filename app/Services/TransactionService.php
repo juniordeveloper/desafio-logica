@@ -8,10 +8,34 @@ use App\Entities\Person;
 use App\Repositories\PersonRepositoryEloquent;
 use App\Repositories\TransactionRepositoryEloquent;
 
+use App\Jobs\Notification;
+
 final class TransactionService
 {
+    /**
+    * Variavel com os dados do beneficiário
+    * @var Person 
+    */
+    protected $payee;
+    
+    /**
+    * Variavel com os dados do pagador
+    * @var Person 
+    */
+    protected $payer;
+
+    /**
+    * Repositorio de pessoas
+    * @var PersonRepositoryEloquent 
+    */
     protected $personRepository;
+
+    /**
+    * Repositorio de transaçoes
+    * @var TransactionRepositoryEloquent 
+    */
     protected $transactionRepository;
+
     public function __construct(
         PersonRepositoryEloquent $personRepository,
         TransactionRepositoryEloquent $transactionRepository
@@ -21,6 +45,14 @@ final class TransactionService
         $this->transactionRepository = $transactionRepository;
     }
 
+    /**
+     * Busca validação da transação
+     *
+     * @param Request $request
+     * @return bool
+     * 
+     * @throws Exception
+     */
     public function handle(Request $request) : bool
     {
         $request->validate([
@@ -29,21 +61,28 @@ final class TransactionService
             'value' => 'required|numeric|min:0',
         ]);
 
-        $payer = $this->getPerson((int) $request->payer, ['PF']);
-        $payee = $this->getPerson((int) $request->payee);
+        $this->payer = $this->getPerson((int) $request->payer, ['PF']);
+        $this->payee = $this->getPerson((int) $request->payee);
 
-        $statusTransferred = $this->checksStatusTransferred();
+        $statusTransferred = $this->checkStatusTransferred();
         $money = (float) $request->value;
         
         $statusTransaction = $this->saveTransaction(
-            $payer,
-            $payee,
             $money,
             $statusTransferred,
         );
+        $this->sendNotification();
         return $statusTransaction;
     }
 
+    /**
+     * Busca e valida o usuario
+     *
+     * @param int $id
+     * @param array $acceptTypes
+     * @return object
+     * @throws Exception
+     */
     protected function getPerson(int $id, array $acceptTypes = ['PF', 'PJ']) : object
     {
         try {
@@ -57,6 +96,14 @@ final class TransactionService
         return $person;
     }
 
+    /**
+     * Valida se o usuario 
+     *
+     * @param Person $person
+     * @param array $types
+     * @return bool
+     * @throws Exception
+     */
     protected function verifyTypePerson(Person $person, array $types) : bool
     {
         if( !in_array($person->type, $types) )
@@ -65,9 +112,14 @@ final class TransactionService
         return true;
     }
 
-    protected function checksStatusTransferred() : string
+    /**
+     * Busca validação da transação por meio de uma API
+     * 
+     * @return string
+     */
+    protected function checkStatusTransferred() : string
     {
-        $response = Http::post('https://run.mocky.io/v3/8fafdd68-a090-496f-8c9a-3442cf30dae6');
+        $response = Http::get('https://run.mocky.io/v3/8fafdd68-a090-496f-8c9a-3442cf30dae6');
 
         if( $response->failed() )
             return 'TRANSACTION_NOK';
@@ -75,6 +127,12 @@ final class TransactionService
         return $this->normalizerResponseTransferred($response->json());
     }
 
+    /**
+     * Normaliza a resposta da api
+     *
+     * @param array $response
+     * @return string
+     */
     protected function normalizerResponseTransferred(array $response) : string
     {
         $status = \Str::slug($response['message']);
@@ -88,25 +146,36 @@ final class TransactionService
         }
     }
 
-    protected function saveTransaction(Person $payee, Person $payer, float $money, string $status) : bool
+    /**
+     * Salva transação no banco de dados
+     *
+     * @param array $response
+     * @return string
+     */
+    protected function saveTransaction(float $money, string $status) : bool
     {
         try {
             $this->transactionRepository->insert([
-                'payee' => $payee->id,
-                'payer' => $payer->id,
+                'payee' => $this->payee->id,
+                'payer' => $this->payer->id,
                 'value' => $money,
                 'status' => $status
             ]);
         } catch (\Throwable $th) {
-            dd($th);
             throw new \Exception('Problema ao realizar a transação', 400);
         }
         
         return true;
     }
     
+    /**
+     * Salva transação no banco de dados
+     *
+     * @param array $response
+     * @return void
+     */
     protected function sendNotification()
     {
-
+        Notification::dispatch([]);
     }
 }

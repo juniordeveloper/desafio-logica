@@ -15,15 +15,15 @@ class TransactionController extends Controller
     public function index(Request $request)
     {
         $request->validate([
-            'payer' => 'required|numeric',
-            'payee' => 'required|numeric',
-            'value' => 'required|numeric|min:0',
+            'payer' => 'required|exists:mysql.persons,id',
+            'payee' => 'required|exists:mysql.persons,id',
+            'value' => 'required|integer|min:0',
         ]);
         
         $this->transactionService->handle($request);
         $data = [
             'message' => 'Transação realizada com sucesso'
         ];
-        return response()->json($data);
+        return response()->json($data, 201);
     }
 }

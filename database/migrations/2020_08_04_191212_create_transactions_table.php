@@ -23,7 +23,7 @@ class CreateTransactionsTable extends Migration
 			$table->foreign('payer')->references('id')->on('persons');
 			$table->foreign('payee')->references('id')->on('persons');
 
-            $table->decimal('value', 15,2);
+            $table->integer('value');
             $table->enum('status', ['TRANSACTION_OK', 'TRANSACTION_NOK']);
             $table->timestamps();
 		});

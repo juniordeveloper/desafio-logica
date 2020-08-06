@@ -46,15 +46,13 @@ final class TransactionService
     {
         $payer = $this->getPerson($request->payer, ['PF']);
         $payee = $this->getPerson($request->payee);
-
-        $statusTransferred = $this->checkStatusTransferred();
+        
         $money = $request->value;
         
         $statusTransaction = $this->saveTransaction(
             $payer,
             $payee,
-            $money,
-            $statusTransferred,
+            $money
         );
         $this->sendNotification();
         return $statusTransaction;
@@ -91,8 +89,9 @@ final class TransactionService
      */
     protected function verifyTypePerson(Person $person, array $types) : bool
     {
-        if( !in_array($person->type, $types) )
+        if (!in_array($person->type, $types)) {
             throw new \Exception('Pessoa jurídica não pode realizar transações', 400);
+        }
 
         return true;
     }
@@ -106,8 +105,9 @@ final class TransactionService
     {
         $response = Http::get('https://run.mocky.io/v3/8fafdd68-a090-496f-8c9a-3442cf30dae6');
 
-        if( $response->failed() )
+        if ($response->failed()) {
             return 'TRANSACTION_NOK';
+        }
             
         return $this->normalizerResponseTransferred($response->json());
     }
@@ -121,14 +121,7 @@ final class TransactionService
     protected function normalizerResponseTransferred(array $response) : string
     {
         $status = \Str::slug($response['message']);
-        switch ($status) {
-            case 'autorizado':
-                return 'TRANSACTION_OK';
-                break;
-            default:
-                return 'TRANSACTION_NOK';
-                break;
-        }
+        return $status == 'autorizado' ? 'TRANSACTION_OK' : 'TRANSACTION_NOK';
     }
 
     /**
@@ -137,8 +130,10 @@ final class TransactionService
      * @param array $response
      * @return string
      */
-    protected function saveTransaction(Person $payee, Person $payer, float $money, string $status) : bool
+    protected function saveTransaction(Person $payee, Person $payer, float $money) : bool
     {
+        $status = $this->checkStatusTransferred();
+
         try {
             $this->transactionRepository->insert([
                 'payee' => $payee->id,
@@ -161,6 +156,6 @@ final class TransactionService
      */
     protected function sendNotification()
     {
-        Notification::dispatch([]);
+        Notification::dispatch();
     }
 }

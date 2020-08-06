@@ -19,7 +19,8 @@ class CreateBalancesTable extends Migration
             $table->increments('id');
             $table->integer('person_id')->unsigned();
             $table->foreign('person_id')->references('id')->on('persons');
-            $table->decimal('value', 15, 2);
+            $table->integer('value');
+            $table->softDeletes();
             $table->timestamps();
         });
     }
